@@ -1,0 +1,16 @@
+streamlit
+langchain
+langchain-community
+langchain-core
+langchain-groq
+langchain-experimental
+langchain-text-splitters
+faiss-cpu
+python-dotenv
+pypdf
+docx2txt
+torch
+torchvision
+sentence-transformers
+rank_bm25
+python-docx
