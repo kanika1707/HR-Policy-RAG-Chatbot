@@ -9,7 +9,6 @@
 ![LangChain](https://img.shields.io/badge/LangChain-1C3C3C?style=for-the-badge&logo=langchain&logoColor=white)
 ![Groq](https://img.shields.io/badge/Groq-F55036?style=for-the-badge&logo=groq&logoColor=white)
 ![FAISS](https://img.shields.io/badge/FAISS-0467DF?style=for-the-badge&logo=meta&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
 
 </div>
 
@@ -326,6 +325,12 @@ The chat interface is built with **Streamlit** and provides a clean, intuitive e
 └─────────────────┴────────────────────────────────────────────┘
 ```
 
+### Screenshot
+
+![HR Policy RAG Chatbot Demo](assets/demo.png)
+
+> *The chatbot correctly classifies query type, retrieves relevant chunks, reranks them, and cites the exact source document with a clickable link.*
+
 ### Key UI Elements
 
 - **Document list** — shows all indexed files in the sidebar
@@ -466,20 +471,6 @@ python -m streamlit run streamlit_app.py
 
 ---
 
-## 🆓 Cost
-
-This project is designed to run **completely free**:
-
-| Component | Cost |
-|---|---|
-| Groq API (Llama-3.3-70b) | Free tier: 14,400 requests/day |
-| all-MiniLM-L6-v2 embeddings | Free — runs locally |
-| FAISS vector store | Free — runs locally |
-| BM25 reranker | Free — runs locally |
-| **Total** | **$0** |
-
----
-
 ## 📋 Requirements
 
 ```
@@ -515,6 +506,104 @@ python-docx
 
 ---
 
+## 🔭 Next Steps — Evaluation Framework
+
+The current chatbot has no way to measure whether its answers are actually correct. The next major improvement is building an **automated evaluation pipeline** to score the chatbot's accuracy, relevance, and faithfulness on every response.
+
+### Planned: RAGAS Evaluation Framework
+
+[RAGAS](https://docs.ragas.io) (Retrieval Augmented Generation Assessment) is the industry-standard library for evaluating RAG pipelines. It measures four key metrics without needing human-labelled answers — it uses an LLM as the judge.
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                  RAGAS EVALUATION PIPELINE                  │
+│                                                             │
+│  Question + Ground Truth Answer                             │
+│         │                                                   │
+│         ▼                                                   │
+│  RAG Chatbot  ──▶  Generated Answer + Retrieved Chunks      │
+│         │                                                   │
+│         ▼                                                   │
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │  RAGAS Scorer (LLM-as-judge)                         │   │
+│  │                                                      │   │
+│  │  Faithfulness          Did the answer stay within    │   │
+│  │  score: 0.0 – 1.0      the retrieved context?        │   │
+│  │                                                      │   │
+│  │  Answer Relevance      Does the answer actually      │   │
+│  │  score: 0.0 – 1.0      address the question asked?   │   │
+│  │                                                      │   │
+│  │  Context Precision     Are the retrieved chunks      │   │
+│  │  score: 0.0 – 1.0      actually relevant to the Q?   │   │
+│  │                                                      │   │
+│  │  Context Recall        Did retrieval find ALL the    │   │
+│  │  score: 0.0 – 1.0      information needed to answer? │   │
+│  └──────────────────────────────────────────────────────┘   │
+│         │                                                   │
+│         ▼                                                   │
+│  Evaluation Report  (CSV / JSON / Streamlit dashboard)      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Metrics Explained
+
+| Metric | What it measures | Why it matters |
+|---|---|---|
+| **Faithfulness** | Does the answer contain only facts from the retrieved chunks? | Detects hallucination — the LLM making things up |
+| **Answer Relevance** | Is the answer on-topic and directly addressing the question? | Detects vague or off-topic responses |
+| **Context Precision** | Are the retrieved chunks relevant to the question? | Measures retrieval quality — are we fetching the right chunks? |
+| **Context Recall** | Did we retrieve all the chunks needed to fully answer? | Measures retrieval completeness — are we missing key info? |
+
+### Implementation Plan
+
+**Step 1 — Build a test dataset**
+Create a `eval/test_questions.csv` with columns:
+```
+question, ground_truth_answer, relevant_document
+```
+Example rows:
+```
+"How many sick leave days are allowed?", "10 days per year", "HR_Policy.pdf"
+"What is the notice period for resignation?", "30 days", "Employment_Terms.pdf"
+```
+
+**Step 2 — Run the evaluation script**
+```python
+# eval/evaluate.py  (planned)
+from ragas import evaluate
+from ragas.metrics import faithfulness, answer_relevancy, context_precision, context_recall
+
+dataset = load_test_questions("eval/test_questions.csv")
+results = evaluate(dataset, metrics=[
+    faithfulness,
+    answer_relevancy,
+    context_precision,
+    context_recall,
+])
+results.to_pandas().to_csv("eval/results.csv")
+```
+
+**Step 3 — Add scores to the Streamlit sidebar**
+Display a live accuracy dashboard in the sidebar so users can see how well the chatbot is performing on the benchmark questions.
+
+**Step 4 — Use scores to tune the pipeline**
+| Low score on... | Tune this |
+|---|---|
+| Faithfulness | Strengthen the prompt ("answer only from context") |
+| Answer Relevance | Improve query classification logic |
+| Context Precision | Increase BM25 rerank weight, reduce FAISS k |
+| Context Recall | Increase chunk size or retrieval k |
+
+### Other Planned Improvements
+
+- 🌐 **Hybrid Search** — combine BM25 + dense retrieval at query time (not just reranking)
+- 🧩 **Smarter Chunking** — experiment with `chunk_size` values driven by eval scores
+- 🔗 **Multi-document reasoning** — synthesise answers that span multiple source files
+- 📊 **Usage Analytics** — track most-asked questions to identify policy gaps
+- 🐳 **Docker deployment** — containerise for one-command cloud deployment
+
+---
+
 ## 👤 Author
 
 **Kanika Aggarwal**
@@ -523,6 +612,3 @@ Built with LangChain, Groq, FAISS, and Streamlit.
 
 ---
 
-## 📜 License
-
-MIT License — free to use, modify, and distribute.
