@@ -20,9 +20,6 @@ The **HR Policy RAG Chatbot** is an AI-powered question-answering system that le
 
 Built on **Retrieval-Augmented Generation (RAG)**, the chatbot does not guess or hallucinate. Every answer is grounded in your actual documents, with **clickable source links** and the **exact text chunk** the AI used to generate its response shown transparently below each answer.
 
-> No more digging through PDFs. No more waiting for an HR email reply.  
-> Ask in plain English. Get a precise, cited answer in seconds.
-
 ---
 
 ## ❗ Problem Statement
